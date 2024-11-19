@@ -113,7 +113,7 @@ This project is licensed under the [MIT License](LICENSE).
 
 ## 🧑‍💻 Author
 
-Developed by [Your Name](https://github.com/amitanand983).
+Developed by [Amit Anand](https://github.com/amitanand983).
 
 Feel free to reach out for suggestions or feedback!
 ```
