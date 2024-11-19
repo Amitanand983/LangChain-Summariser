@@ -30,7 +30,7 @@ This application leverages **LangChain** and **Groq's Gemma Model** to summarize
 
 ### Clone the Repository
 ```bash
-git clone https://github.com/yourusername/langchain-summarizer.git
+git clone https://github.com/amitanand983/langchain-summarizer.git
 cd langchain-summarizer
 ```
 
