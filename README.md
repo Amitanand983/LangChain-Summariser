@@ -1,23 +1,25 @@
-# 🦜 LangChain Summarizer App
+# 🦜 LangChain Summarizer and Chat App
 
-This application leverages **LangChain** and **Groq's Gemma Model** to summarize content from YouTube videos, websites, audio files, or document files. It extracts relevant information and generates concise summaries, making it easy to analyze large amounts of text in seconds.
+This updated application combines the power of **LangChain** and **Groq's Gemma Model** to summarize content from YouTube videos, websites, audio files, or document files and enables an interactive chat interface with the summarized data. This allows users not only to analyze large content but also to engage with it conversationally.
 
 ---
 
 ## 🚀 Features
 
-- **Summarize YouTube Videos**: Extracts transcripts and generates a concise summary of the video content.  
-- **Website Summarization**: Supports summarizing text from any web page.  
-- **Audio File Transcription**: Transcribes and summarizes audio files (e.g., `.mp3`, `.wav`, `.m4a`).  
+- **Summarize YouTube Videos**: Extracts transcripts and generates concise summaries of video content.  
+- **Website Summarization**: Summarizes text from any web page.  
+- **Audio File Transcription and Summarization**: Transcribes and summarizes audio files (e.g., `.mp3`, `.wav`, `.m4a`).  
 - **Document Summarization**: Handles `.pdf`, `.docx`, and `.txt` files for summarization.  
+- **Chat with Summarized Data**: Enables users to ask questions and interact with the summarized content using a chatbot interface.
 
 ---
 
 ## 🛠️ Tech Stack
 
-- **[LangChain](https://langchain-langchain.com)**: Provides LLM-based summarization capabilities.
-- **[Groq Gemma Model](https://www.groq.com)**: A cutting-edge language model for natural language understanding.
-- **Streamlit**: For a lightweight and interactive user interface.
+- **[LangChain](https://langchain-langchain.com)**: Provides LLM-based summarization and retrieval capabilities.
+- **[Groq Gemma Model](https://www.groq.com)**: A state-of-the-art language model for natural language processing.
+- **Streamlit**: For a dynamic and user-friendly web interface.
+- **FAISS**: For efficient vector-based retrieval in the chatbot.
 - **Whisper by OpenAI**: Transcribes audio files into text.
 
 ---
@@ -58,7 +60,7 @@ pip install -r requirements.txt
    streamlit run app.py
    ```
 
-3. **Upload Input or Provide URL**:
+3. **Provide Input**:
    - Enter a YouTube or Website URL.
    - Upload an audio file (`.mp3`, `.wav`, `.m4a`).
    - Upload a document (`.pdf`, `.docx`, `.txt`).
@@ -68,19 +70,22 @@ pip install -r requirements.txt
 ## 🖥️ Usage
 
 1. **Start the app**: Open the app in your browser (default: `http://localhost:8501`).
-2. **Select Input**:
+2. **Input Content**:
    - Enter a YouTube URL for video summarization.
    - Paste a website URL to summarize webpage content.
    - Upload an audio file or document for transcription and summarization.
-3. **Click "Summarize the Content"**: The app will process the input and display the summary.
+3. **Summarize the Content**: Click "Summarize the Content" to generate a summary of the input. The app processes the input and displays a concise summary.
+4. **Chat with the Data**:
+   - Use the chat interface to ask questions about the summarized content.
+   - View responses with relevant sources displayed for transparency.
 
 ---
 
 ## 🛑 Known Limitations
 
-- **Token Limit**: Very large inputs (e.g., long videos or lengthy documents) may require chunking for processing.
+- **Token Limit**: Very large inputs (e.g., lengthy videos or documents) are chunked for processing, which may impact context consistency in summaries.
 - **YouTube Restrictions**: Videos with disabled transcripts cannot be processed.
-- **Model Dependency**: Relies on Groq's language model for summarization, requiring an active API key.
+- **Model Dependency**: Requires an active Groq API Key for the Gemma model.
 
 ---
 
