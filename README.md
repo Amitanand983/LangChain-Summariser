@@ -116,6 +116,3 @@ This project is licensed under the [MIT License](LICENSE).
 Developed by [Amit Anand](https://github.com/amitanand983).
 
 Feel free to reach out for suggestions or feedback!
-```
-
-This includes everything from cloning the repo, setting up the environment, running the app, and using it, along with features, contributions, and license information.
