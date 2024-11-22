@@ -1,42 +1,41 @@
-tensorflow
-pandas
-numpy
-scikit-learn
-tensorboard
-matplotlib
-streamlit
-langchain
-python-dotenv
-ipykernel
-langchain-community
-pypdf
-bs4
-arxiv
-pymupdf
-wikipedia
-langchain-text-splitters
-langchain-openai
-chromadb
-sentence_transformers
-langchain_huggingface
-faiss-cpu
-langchain_chroma
-duckdb
-pandas
-openai
-langchain-groq
-duckduckgo_search==5.3.1b1
-pymupdf
-arxiv
-wikipedia
-mysql-connector-python
-SQLAlchemy
-validators==0.28.1
+# General dependencies
+numpy>=1.24.0
+pandas>=1.4.0
+scikit-learn>=1.2.0
+
+# Streamlit
+streamlit>=1.22.0
+
+# TensorFlow (use the appropriate version for compatibility)
+tensorflow>=2.13.0,<2.19.0
+tf-keras>=2.18.0
+
+# Hugging Face Transformers and Sentence Transformers
+transformers>=4.32.0
+sentence-transformers>=2.2.2
+
+# LangChain dependencies
+langchain>=0.0.300
+langchain-core>=0.3.0
+
+# Embedding Models
+faiss-cpu>=1.9.0
+
+# OAuth and Google APIs
+google-auth>=2.0.0
+google-auth-oauthlib>=1.0.0
+
+# Visualization and Protobuf
+protobuf>=4.25.0,<5.0.0
+altair>=5.4.0
+
+# Miscellaneous
+typing-extensions>=4.7.0
+validators
+langchain_groq
+langchain_community
 youtube_transcript_api
-unstructured
-pytube
-numexpr
-huggingface_hub
-openai-whisper
 PyPDF2
 python-docx
+openai-whisper
+unstructured
