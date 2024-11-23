@@ -39,3 +39,4 @@ PyPDF2
 python-docx
 openai-whisper
 unstructured
+deep_translator
