@@ -40,3 +40,6 @@ python-docx
 openai-whisper
 unstructured
 deep_translator
+youtube_dl
+pytube
+yt_dlp
