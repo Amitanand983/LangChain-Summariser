@@ -40,7 +40,7 @@ class ModelConfig:
             },
             "document": {
                 "provider": "groq",
-                "model": "claude-3-lite",  # Updated for document processing
+                "model": "llama3-8b-8192",  # Updated for document processing
                 "description": "Optimized for document summarization and analysis"
             }
         }
