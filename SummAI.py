@@ -15,7 +15,46 @@ from PyPDF2 import PdfReader
 import docx
 import tempfile
 import os
-from deep_translator import GoogleTranslator  # Import for translation
+from deep_translator import GoogleTranslator
+import yt_dlp
+from pytube import YouTube
+
+# Model Configuration Class
+class ModelConfig:
+    def __init__(self):
+        self.models = {
+            "youtube": {
+                "provider": "groq",
+                "model": "mixtral-8x7b-32768",
+                "description": "Optimized for video transcript analysis"
+            },
+            "audio": {
+                "provider": "groq",
+                "model": "gemma-7b-it",
+                "description": "Specialized for audio content analysis"
+            },
+            "url": {
+                "provider": "groq",
+                "model": "mixtral-8x7b-32768",  # Updated for URL processing
+                "description": "Optimized for web content analysis"
+            },
+            "document": {
+                "provider": "groq",
+                "model": "claude-3-lite",  # Updated for document processing
+                "description": "Optimized for document summarization and analysis"
+            }
+        }
+    
+    def get_model(self, content_type, api_key):
+        """Get the appropriate LLM based on content type."""
+        model_config = self.models.get(content_type.lower(), self.models["document"])
+        
+        if model_config["provider"] == "groq":
+            return ChatGroq(
+                model=model_config["model"],
+                groq_api_key=api_key
+            )
+        return None
 
 # Streamlit App Configuration
 st.set_page_config(
@@ -28,8 +67,17 @@ st.subheader("Summarize URL, Audio, or Document and Chat with the Data")
 # Sidebar for Groq API Key Input
 with st.sidebar:
     groq_api_key = st.text_input("Groq API Key", value="", type="password")
+    
+    # Model Information Display
+    st.subheader("🤖 Model Information")
+    model_config = ModelConfig()
+    for content_type, model_info in model_config.models.items():
+        with st.expander(f"{content_type.title()} Model"):
+            st.write(f"**Model**: {model_info['model']}")
+            st.write(f"**Provider**: {model_info['provider'].title()}")
+            st.write(f"**Description**: {model_info['description']}")
 
-    # History Section in Sidebar
+    # History Section
     st.subheader("📜 History")
     if "history" in st.session_state and st.session_state.history:
         for idx, item in enumerate(st.session_state.history):
@@ -38,36 +86,72 @@ with st.sidebar:
                 st.session_state.current_summary = item["summary"]
                 st.session_state.current_qa_pairs = item["qa_pairs"]
 
-# Dropdown and Input Box for Summarization Type
-st.subheader("Choose the type of content to summarize")
-content_type = st.selectbox("Select content type", ["URL", "Audio File", "Document File"])
-input_content = None
-
-if content_type == "URL":
-    input_content = st.text_input("Enter the URL to summarize")
-elif content_type == "Audio File":
-    input_content = st.file_uploader("Upload an audio file (mp3, wav, m4a)", type=["mp3", "wav", "m4a"])
-elif content_type == "Document File":
-    input_content = st.file_uploader("Upload a document file (PDF, DOCX, TXT)", type=["pdf", "docx", "txt"])
-
-# LangChain LLM Setup (Gemma Model)
-llm = ChatGroq(model="Gemma-7b-It", groq_api_key=groq_api_key)
-
 # Prompt Templates
 map_prompt_template = """
-Write a concise summary of the following:
+Break down and analyze the following content into a structured format:
 "{text}"
-CONCISE SUMMARY:
+
+Please organize the summary in the following format:
+1. Main Topics:
+   - List key topics/themes
+   - Each point should be concise but informative
+
+2. Subtopics and Details:
+   - Break down each main topic into relevant subtopics
+   - Include important details and explanations
+
+3. Key Examples/Evidence:
+   - List specific examples, case studies, or evidence mentioned
+   - Include relevant data points or statistics if present
+
+4. Important Takeaways:
+   - List practical implications or conclusions
+   - Highlight significant findings or results
+
+Please ensure all points are clear, concise, and well-organized with proper bullet points.
+Avoid paragraph format and focus on structured, point-wise information.
+
+STRUCTURED SUMMARY:
 """
 map_prompt = PromptTemplate(template=map_prompt_template, input_variables=["text"])
 
 combine_prompt_template = """
-Write a concise summary of the following summaries:
+Combine the following summaries into a single, well-organized structure:
 "{text}"
-CONCISE SUMMARY:
+
+Create a comprehensive summary in this format:
+1. Main Topics & Themes:
+   - Consolidate all major topics
+   - List overarching themes
+
+2. Detailed Breakdown:
+   - Key concepts and ideas
+   - Important definitions
+   - Critical arguments or positions
+
+3. Supporting Evidence:
+   - Notable examples
+   - Statistical data
+   - Case studies
+   - Specific illustrations
+
+4. Key Findings & Implications:
+   - Major conclusions
+   - Practical applications
+   - Significant insights
+
+Rules:
+- Use bullet points and sub-bullets for clear organization
+- Keep points concise but informative
+- Avoid paragraph-style writing
+- Ensure logical grouping of related points
+- Include specific details and examples where relevant
+
+STRUCTURED SUMMARY:
 """
 combine_prompt = PromptTemplate(template=combine_prompt_template, input_variables=["text"])
 
+# QA Prompt can also be enhanced for more structured answers
 qa_prompt_template = """
 Use the following pieces of context to answer the question at the end. 
 If you don't know the answer, just say that you don't know, don't try to make up an answer.
@@ -76,17 +160,34 @@ Context: {context}
 
 Question: {question}
 
-Answer the question thoroughly and accurately based on the context provided.
+Please structure your answer in the following format when applicable:
+1. Direct Answer:
+   - Provide a clear, concise response
+
+2. Supporting Details:
+   - List relevant facts and information
+   - Include specific examples from the context
+
+3. Additional Context:
+   - Any relevant background information
+   - Related concepts or implications
+
+4. Sources:
+   - Reference specific parts of the context used
+
+Present the information in a point-wise manner using appropriate bullet points and numbering.
+Avoid long paragraphs unless absolutely necessary.
 """
 qa_prompt = PromptTemplate(
     template=qa_prompt_template,
     input_variables=["context", "question"]
 )
 
-# Token limits
-CHUNK_SIZE = 500  # Smaller chunks for better context retrieval
+# Constants
+CHUNK_SIZE = 500
 CHUNK_OVERLAP = 50
 
+# Utility Functions
 def extract_text_from_document(file):
     """Extract text from uploaded document files."""
     if file.name.endswith(".pdf"):
@@ -109,22 +210,34 @@ def process_content(content, source):
         chunks.append(Document(page_content=chunk, metadata={"source": source}))
     return chunks
 
-def fetch_youtube_transcript(video_id):
-    """Fetch and optionally translate a YouTube transcript."""
+def download_audio_ytdlp(video_url):
+    """Download audio from YouTube using yt-dlp."""
+    ydl_opts = {
+        "format": "bestaudio/best",
+        "outtmpl": tempfile.NamedTemporaryFile(delete=False, suffix=".mp3").name,
+        "quiet": True,
+    }
+    with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+        info_dict = ydl.extract_info(video_url, download=True)
+        return ydl.prepare_filename(info_dict)
+
+def fetch_youtube_transcript_or_whisper(video_id):
+    """Fetch transcript or generate using Whisper."""
+    video_url = f"https://www.youtube.com/watch?v={video_id}"
     try:
         transcript = YouTubeTranscriptApi.get_transcript(video_id, languages=["en"])
         return " ".join([t["text"] for t in transcript])
-    except NoTranscriptFound:
+    except (NoTranscriptFound, TranscriptsDisabled):
+        st.warning("No transcript available. Attempting Whisper transcription...")
         try:
-            transcript = YouTubeTranscriptApi.list_transcripts(video_id).find_transcript(['hi', 'es', 'fr', 'de'])
-            translated_transcript = transcript.translate('en')
-            return " ".join([t['text'] for t in translated_transcript.fetch()])
-        except Exception:
-            st.error("Transcripts are unavailable in translatable languages for this video.")
+            audio_path = download_audio_ytdlp(video_url)
+            model = whisper.load_model("base")
+            transcription = model.transcribe(audio_path)
+            os.remove(audio_path)
+            return transcription["text"]
+        except Exception as e:
+            st.error(f"Failed to transcribe audio: {e}")
             return ""
-    except TranscriptsDisabled:
-        st.error("Transcripts are disabled for this video.")
-        return ""
 
 # Initialize session states
 if "vectorstore" not in st.session_state:
@@ -139,7 +252,19 @@ if "history" not in st.session_state:
 # Embedding initialization
 embeddings = HuggingFaceEmbeddings(model_name="sentence-transformers/all-MiniLM-L6-v2")
 
-# Button for Processing Content
+# Content Type Selection
+st.subheader("Choose the type of content to summarize")
+content_type = st.selectbox("Select content type", ["URL", "Audio File", "Document File"])
+input_content = None
+
+if content_type == "URL":
+    input_content = st.text_input("Enter the URL to summarize")
+elif content_type == "Audio File":
+    input_content = st.file_uploader("Upload an audio file (mp3, wav, m4a)", type=["mp3", "wav", "m4a"])
+elif content_type == "Document File":
+    input_content = st.file_uploader("Upload a document file (PDF, DOCX, TXT)", type=["pdf", "docx", "txt"])
+
+# Process Content Button
 if st.button("Process Content"):
     if not groq_api_key.strip() or not input_content:
         st.error("Please provide valid input and Groq API Key.")
@@ -149,7 +274,11 @@ if st.button("Process Content"):
                 docs = []
                 source_name = ""
 
-                # Process content based on selected type
+                # Get specialized model for content type
+                model_type = "youtube" if content_type == "URL" and ("youtube.com" in input_content or "youtu.be" in input_content) else content_type.lower().split()[0]
+                llm = ModelConfig().get_model(model_type, groq_api_key)
+
+                # Process content based on type
                 if content_type == "URL":
                     source_name = input_content
                     if "youtube.com" in input_content or "youtu.be" in input_content:
@@ -158,9 +287,11 @@ if st.button("Process Content"):
                             if "youtube.com" in input_content
                             else input_content.split("/")[-1]
                         )
-                        content = fetch_youtube_transcript(video_id)
+                        content = fetch_youtube_transcript_or_whisper(video_id)
                         if content:
                             docs.extend(process_content(content, input_content))
+                        else:
+                            st.error("Failed to process YouTube video. No content available.")
                     else:
                         try:
                             loader = UnstructuredURLLoader(urls=[input_content])
@@ -214,7 +345,7 @@ if st.button("Process Content"):
             st.error(f"An error occurred: {e}")
             st.exception(e)
 
-# Display the current summary and Q&A
+# Display Summary and Q&A
 if st.session_state.current_summary:
     st.subheader("Summary")
     st.write(st.session_state.current_summary)
@@ -225,6 +356,12 @@ if st.session_state.vectorstore:
     
     if user_question:
         with st.spinner("Thinking..."):
+            # Create Mixtral model instance directly for Q&A
+            llm = ChatGroq(
+                model="mixtral-8x7b-32768",
+                groq_api_key=groq_api_key
+            )
+            
             qa_chain = RetrievalQA.from_chain_type(
                 llm=llm,
                 chain_type="stuff",
@@ -235,20 +372,16 @@ if st.session_state.vectorstore:
                 return_source_documents=True,
             )
             
-            # Use `__call__` to get both the result and source documents
             response = qa_chain({"query": user_question})
-            result = response["result"]  # Extract the answer
-            source_documents = response["source_documents"]  # Extract source documents
+            result = response["result"]
+            source_documents = response["source_documents"]
             
-            # Display the answer
             st.write("**Answer:**", result)
             
-            # Optionally display source documents (if needed)
             with st.expander("Source Documents"):
                 for doc in source_documents:
-                    st.write(f"- {doc.page_content[:200]}...")  # Show snippet of the source
+                    st.write(f"- {doc.page_content[:200]}...")
             
-            # Save Q&A pairs in history
             qa_pair = {
                 "question": user_question,
                 "answer": result,
@@ -257,16 +390,14 @@ if st.session_state.vectorstore:
             st.session_state.current_qa_pairs.append(qa_pair)
             st.session_state.history[-1]["qa_pairs"].append(qa_pair)
 
-# Sidebar History Section
+# Update Sidebar History
 with st.sidebar:
     st.subheader("History")
     if st.session_state.history:
         for idx, entry in enumerate(st.session_state.history):
             with st.expander(f"Session {idx + 1}"):
-                # Display Summary
                 st.write("**Summary:**", entry["summary"])
                 
-                # Display Q&A Pairs
                 if "qa_pairs" in entry and entry["qa_pairs"]:
                     st.write("**Q&A Pairs:**")
                     for qidx, qa in enumerate(entry["qa_pairs"]):
