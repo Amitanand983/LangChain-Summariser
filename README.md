@@ -1,4 +1,4 @@
-# 🦜 LangChain Summarizer and Chat App
+# ❄️ SummAI – Multimodal Multitask Summarization and Q&A Tool
 
 This updated application combines the power of **LangChain** and **Groq's Gemma Model** to summarize content from YouTube videos, websites, audio files, or document files and enables an interactive chat interface with the summarized data. This allows users not only to analyze large content but also to engage with it conversationally.
 
